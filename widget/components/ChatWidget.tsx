@@ -12,6 +12,9 @@ export default function ChatWidget() {
   const [minimized, setMinimized] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [autoGreeted, setAutoGreeted] = useState(false)
+  const [showTyping, setShowTyping] = useState(false)
+  const [autoMessage, setAutoMessage] = useState<string | null>(null)
   const { messages, sendMessage, bottomRef } = useChat(conversationId || undefined)
 
   useEffect(() => {
@@ -30,6 +33,20 @@ export default function ChatWidget() {
       setUnreadCount((prev) => prev + 1)
     }
   }, [messages])
+
+  // Auto-greeting: shows typing indicator then drops the welcome message
+  useEffect(() => {
+    if (!conversationId || autoGreeted) return
+    setAutoGreeted(true)
+    setShowTyping(true)
+    const t = setTimeout(() => {
+      setShowTyping(false)
+      setAutoMessage(
+        "👋 You are now connected with a Live Part Expert"
+      )
+    }, 1800)
+    return () => clearTimeout(t)
+  }, [conversationId])
 
   const handleStartChat = async (data: any) => {
     const res = await createConversation({
@@ -74,13 +91,14 @@ export default function ChatWidget() {
       `}</style>
 
       {/* ── FAB ── */}
+      {/* CHANGED: bottom 24→20, right 24→16 (matches chat box margin) */}
       <button
         className="acp-fab"
         onClick={() => { setOpen(!open); setMinimized(false); setUnreadCount(0) }}
         style={{
           position: "fixed",
-          bottom: 24,
-          right: 24,
+          bottom: 20,
+          right: 16,
           borderRadius: "50%",
           width: 58,
           height: 58,
@@ -140,13 +158,14 @@ export default function ChatWidget() {
       </button>
 
       {/* ── Minimized pill ── */}
+      {/* CHANGED: bottom 96→90, right 24→16 */}
       {open && minimized && (
         <div
           onClick={() => { setMinimized(false); setUnreadCount(0) }}
           style={{
             position: "fixed",
-            bottom: 96,
-            right: 24,
+            bottom: 90,
+            right: 16,
             background: "#1a1a2e",
             color: "#fff",
             borderRadius: 28,
@@ -207,13 +226,17 @@ export default function ChatWidget() {
       )}
 
       {/* ── Chat Box ── */}
+      {/* CHANGED: bottom 96→90, right 24→16, added left:16 for equal margins,
+          width kept as min() cap for desktop, height adjusted to match new bottom */}
       {open && !minimized && (
         <div style={{
           position: "fixed",
-          bottom: 96,
-          right: 24,
+          bottom: 90,
+          right: 16,
+          left: 16,
           width: "min(368px, calc(100vw - 32px))",
-          height: "min(560px, calc(100svh - 120px))",
+          height: "min(560px, calc(100svh - 116px))",
+          marginLeft: "auto",
           background: "#fff",
           borderRadius: 22,
           display: "flex",
@@ -348,35 +371,66 @@ export default function ChatWidget() {
                   gap: 2,
                 }}
               >
-                {messages.length === 0 && (
-                  <div style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "40px 20px",
-                    textAlign: "center",
-                    animation: "acpFadeIn 0.3s ease-out",
-                  }}>
+                {/* ── Typing indicator ── */}
+                {showTyping && (
+                  <div style={{ animation: "acpFadeIn 0.25s ease-out", marginBottom: 2 }}>
                     <div style={{
-                      width: 52, height: 52,
-                      borderRadius: "50%",
-                      background: "#eef0f7",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      marginBottom: 12,
+                      fontSize: 10.5, color: "#9ca3af", fontWeight: 500,
+                      paddingLeft: 4, marginBottom: 3,
                     }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                        stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                      </svg>
+                      Support Agent
                     </div>
-                    <p style={{ color: "#6b7280", fontSize: 13, fontWeight: 500, margin: "0 0 4px" }}>
-                      No messages yet
-                    </p>
-                    <p style={{ color: "#c4c9d4", fontSize: 11.5, margin: 0 }}>
-                      Send us a message to get started
-                    </p>
+                    <div style={{
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                      background: "#fff",
+                      border: "1px solid #eef0f5",
+                      borderRadius: "18px 18px 18px 4px",
+                      padding: "10px 14px",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                    }}>
+                      <style>{`
+                        @keyframes acpDot {
+                          0%,60%,100% { transform:translateY(0); opacity:.35; }
+                          30%         { transform:translateY(-4px); opacity:1; }
+                        }
+                        .acp-dot { width:6px; height:6px; border-radius:50%; background:#9ca3af; animation:acpDot 1.2s ease-in-out infinite; }
+                        .acp-dot:nth-child(2){ animation-delay:.15s; }
+                        .acp-dot:nth-child(3){ animation-delay:.3s; }
+                      `}</style>
+                      <span className="acp-dot"/>
+                      <span className="acp-dot"/>
+                      <span className="acp-dot"/>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Auto welcome message ── */}
+                {autoMessage && (
+                  <div style={{ animation: "acpFadeIn 0.3s ease-out", marginBottom: 4 }}>
+                    <div style={{
+                      fontSize: 10.5, color: "#9ca3af", fontWeight: 500,
+                      paddingLeft: 4, marginBottom: 3,
+                    }}>
+                      Support Agent
+                    </div>
+                    <div style={{
+                      background: "#fff",
+                      border: "1px solid #eef0f5",
+                      borderRadius: "18px 18px 18px 4px",
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      color: "#111827",
+                      lineHeight: 1.5,
+                      maxWidth: "88%",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                    }}>
+                      {autoMessage}
+                    </div>
+                    <div style={{ paddingLeft: 4, marginTop: 3 }}>
+                      <span style={{ fontSize: 10, color: "#c4c9d4" }}>
+                        {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
                   </div>
                 )}
 
