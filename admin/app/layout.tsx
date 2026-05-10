@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import AuthGate from "@/components/AuthGate";
-import Script from "next/script"; // 👈 ADD THIS
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +29,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        
+
         {/* 🔔 OneSignal Script */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
@@ -51,8 +50,8 @@ export default function RootLayout({
           `}
         </Script>
 
-        {/* 🔐 Your existing auth (UNCHANGED) */}
-        <AuthGate>{children}</AuthGate>
+        {/* ✅ App Content */}
+        {children}
 
       </body>
     </html>
