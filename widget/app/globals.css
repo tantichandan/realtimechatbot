@@ -1,7 +1,15 @@
 @import "tailwindcss";
 
+/* 🔥 Make everything transparent at the page level */
+html, body {
+  background: transparent !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Keep your variables, but don't use them for page bg */
 :root {
-  --background: #ffffff;
+  --background: transparent;
   --foreground: #171717;
 }
 
@@ -14,13 +22,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: transparent;
     --foreground: #ededed;
   }
 }
 
+/* Only text styling here */
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }

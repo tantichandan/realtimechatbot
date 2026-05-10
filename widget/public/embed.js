@@ -1,25 +1,71 @@
 (function () {
-  if (window.ACP_CHAT_LOADED) return
-  window.ACP_CHAT_LOADED = true
 
-  const iframe = document.createElement("iframe")
+  if (window.ACP_CHAT_LOADED) return;
 
-  iframe.src = "http://localhost:3000/" // your deployed widget
-  iframe.style.position = "fixed"
-  iframe.style.bottom = "0"
-  iframe.style.right = "0"
-  iframe.style.width = 
-  iframe.style.maxWidth = "520px"
-  iframe.style.height = "100%"
-  iframe.style.maxHeight = "600px"
-  iframe.style.border = "none"
-  iframe.style.zIndex = "999999"
-  iframe.style.borderRadius = "12px"
-  iframe.allow = "clipboard-write"
+  window.ACP_CHAT_LOADED = true;
 
-  // Mobile safe spacing
-  iframe.style.margin = "0"
-  iframe.style.padding = "0"
+  function createWidget(scriptTag) {
 
-  document.body.appendChild(iframe)
-})()
+    const widgetKey =
+      scriptTag.getAttribute(
+        "data-widget-key"
+      );
+
+    console.log(
+      "ACP Widget Key:",
+      widgetKey
+    );
+
+    if (!widgetKey) {
+      console.error(
+        "No widget key found"
+      );
+      return;
+    }
+
+    const iframe =
+      document.createElement("iframe");
+
+    iframe.src =
+      `http://localhost:3002/?widget_key=${widgetKey}`;
+
+    iframe.style.position = "fixed";
+    iframe.style.bottom = "20px";
+    iframe.style.right = "20px";
+    iframe.style.width = "380px";
+    iframe.style.height = "600px";
+    iframe.style.border = "none";
+    iframe.style.borderRadius = "12px";
+    iframe.style.zIndex = "999999";
+    iframe.style.background = "transparent";
+
+    document.body.appendChild(iframe);
+  }
+
+  // Find THIS script specifically
+  const scripts =
+    document.getElementsByTagName("script");
+
+  for (let script of scripts) {
+
+    if (
+      script.src.includes("embed.js")
+    ) {
+
+      if (document.readyState === "complete") {
+
+        createWidget(script);
+
+      } else {
+
+        window.addEventListener(
+          "load",
+          () => createWidget(script)
+        );
+      }
+
+      break;
+    }
+  }
+
+})();

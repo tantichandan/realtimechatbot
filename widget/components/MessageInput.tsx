@@ -2,8 +2,14 @@ import { useState, useRef } from "react"
 
 export default function MessageInput({
   onSend,
+  maxChars = 500,
 }: {
-  onSend: (msg: string, file?: File | null) => void
+  onSend: (
+    msg: string,
+    file?: File | null
+  ) => void
+
+  maxChars?: number
 }) {
   const [text, setText] = useState("")
   const [file, setFile] = useState<File | null>(null)
