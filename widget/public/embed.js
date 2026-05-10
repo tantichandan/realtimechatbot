@@ -27,7 +27,7 @@
       document.createElement("iframe");
 
     iframe.src =
-      `http://localhost:3002/?widget_key=${widgetKey}`;
+      `https://realtimechatbot-tan.vercel.app/?widget_key=${widgetKey}`;
 
     iframe.style.position = "fixed";
     iframe.style.bottom = "20px";
