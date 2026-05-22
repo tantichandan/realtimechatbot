@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACPremiumAuto Chatbot Widget</title>
+</head>
+<body>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  #acp-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(26,26,46,0.4);
+    z-index: 99999;
+    transition: transform 0.2s;
+  }
+  #acp-fab:hover { transform: scale(1.08); }
+  #acp-fab:active { transform: scale(0.94); }
+
+  #acp-unread {
+    position: absolute;
+    top: -2px; right: -2px;
+    min-width: 20px; height: 20px;
+    background: #ef4444;
+    border-radius: 10px;
+    border: 2.5px solid #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    padding: 0 4px;
+  }
+
+  #acp-box {
+    position: fixed;
+    bottom: 96px;
+    right: 24px;
+    width: min(368px, calc(100vw - 32px));
+    height: min(560px, calc(100svh - 120px));
+    background: #fff;
+    border-radius: 22px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.07);
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow: hidden;
+    z-index: 99998;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    animation: acpSlideUp 0.28s cubic-bezier(0.34,1.46,0.64,1);
+  }
+
+  @keyframes acpSlideUp {
+    from { opacity:0; transform:translateY(24px) scale(0.95); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+  @keyframes acpFadeIn {
+    from { opacity:0; transform:translateY(5px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes typingBounce {
+    0%,60%,100% { transform:translateY(0); }
+    30%         { transform:translateY(-5px); }
+  }
+
+  /* Header */
+  #acp-header {
+    background: #1a1a2e;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex-shrink: 0;
+  }
+
+  .acp-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; position: relative;
+  }
+  .acp-online-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 10px; height: 10px;
+    background: #22c55e; border-radius: 50%;
+    border: 2px solid #1a1a2e;
+  }
+
+  .acp-header-info { flex: 1; min-width: 0; }
+  .acp-header-name {
+    color: #fff; font-size: 13.5px; font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .acp-header-status {
+    display: flex; align-items: center; gap: 5px; margin-top: 3px;
+  }
+  .acp-status-dot {
+    width: 6px; height: 6px;
+    background: #22c55e; border-radius: 50%; flex-shrink: 0;
+  }
+  .acp-status-text { color: rgba(255,255,255,0.5); font-size: 11px; }
+
+  .acp-hbtns { display: flex; align-items: center; gap: 3px; }
+  .acp-hbtn {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: rgba(255,255,255,0.65);
+    width: 30px; height: 30px;
+    border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .acp-hbtn:hover { background: rgba(255,255,255,0.18); }
+
+  /* Messages */
+  #acp-msgs {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 12px;
+    background: #f7f8fc;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  #acp-msgs::-webkit-scrollbar { width: 3px; }
+  #acp-msgs::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  .acp-msg-wrap { display: flex; flex-direction: column; }
+  .acp-sender-label {
+    font-size: 10.5px; color: #9ca3af; font-weight: 500;
+    padding-left: 4px; margin-bottom: 3px;
+  }
+
+  .acp-bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    word-break: break-word;
+    animation: acpFadeIn 0.2s ease-out;
+  }
+  .acp-bubble.agent {
+    background: #fff;
+    border: 1px solid #e9ebf0;
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+    color: #1f2937;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .acp-bubble.user {
+    background: #1a1a2e;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+    align-self: flex-end;
+  }
+
+  .acp-time {
+    font-size: 10px; color: #c4c9d4; margin-top: 3px; margin-bottom: 4px;
+  }
+  .acp-time.user { text-align: right; padding-right: 2px; display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+  .acp-time.agent { padding-left: 4px; }
+
+  /* Typing */
+  #acp-typing {
+    display: none;
+    align-items: center;
+    padding: 4px 2px 6px;
+    animation: acpFadeIn 0.2s ease-out;
+  }
+  .acp-typing-bubble {
+    background: #fff;
+    border: 1px solid #e9ebf0;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 9px 13px;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .acp-dot {
+    width: 6px; height: 6px;
+    background: #c4c9d4; border-radius: 50%;
+    display: inline-block;
+  }
+  .acp-dot:nth-child(1) { animation: typingBounce 0.9s infinite 0s; }
+  .acp-dot:nth-child(2) { animation: typingBounce 0.9s infinite 0.15s; }
+  .acp-dot:nth-child(3) { animation: typingBounce 0.9s infinite 0.3s; }
+
+  /* Lead form */
+  #acp-lead-form {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 2px;
+    animation: acpFadeIn 0.25s ease-out;
+  }
+  .acp-form-title {
+    font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 2px;
+  }
+  .acp-input {
+    width: 100%;
+    height: 38px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    background: #f8f9fc;
+    color: #111827;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .acp-input:focus { border-color: #1a1a2e; background: #fff; }
+  .acp-submit {
+    height: 40px;
+    background: #1a1a2e;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+  .acp-submit:hover { background: #2d2d52; }
+  .acp-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  /* Input bar */
+  #acp-input-bar {
+    border-top: 1px solid #eef0f5;
+    background: #fff;
+    flex-shrink: 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #acp-text {
+    flex: 1;
+    height: 40px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    background: #f8f9fc;
+    color: #111827;
+    min-width: 0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  #acp-text:focus { border-color: #1a1a2e; background: #fff; }
+  #acp-text::placeholder { color: #c1c7d0; }
+  #acp-send {
+    width: 40px; height: 40px;
+    border: none; border-radius: 10px;
+    background: #e5e7eb;
+    cursor: not-allowed;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    padding: 0;
+  }
+  #acp-send.active { background: #1a1a2e; cursor: pointer; }
+
+  /* Footer */
+  #acp-footer {
+    text-align: center;
+    font-size: 10.5px;
+    color: #c4c9d4;
+    padding: 6px 12px 10px;
+    background: #fff;
+    border-top: 1px solid #f5f6fa;
+  }
+
+  /* Minimized pill */
+  #acp-pill {
+    position: fixed;
+    bottom: 96px; right: 24px;
+    background: #1a1a2e; color: #fff;
+    border-radius: 28px;
+    padding: 9px 14px 9px 10px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 20px rgba(26,26,46,0.35);
+    z-index: 99998;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    animation: acpFadeIn 0.2s ease-out;
+  }
+  .acp-pill-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .acp-pill-text { font-size: 12px; font-weight: 600; line-height: 1; }
+  .acp-pill-close {
+    background: rgba(255,255,255,0.12);
+    border: none; color: #fff;
+    width: 22px; height: 22px;
+    border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; margin-left: 2px;
+  }
+</style>
+
+<!-- FAB -->
+<button id="acp-fab" aria-label="Open chat">
+  <div id="acp-fab-icon" style="transition: transform 0.3s;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+  </div>
+  <div id="acp-unread"></div>
+  <span id="acp-online-dot" style="
+    position:absolute; bottom:3px; right:3px;
+    width:12px; height:12px;
+    background:#22c55e; border-radius:50%;
+    border:2.5px solid #1a1a2e;
+  "></span>
+</button>
+
+<!-- Minimized pill -->
+<div id="acp-pill">
+  <div class="acp-pill-icon">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="rgba(255,255,255,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+  </div>
+  <div>
+    <div class="acp-pill-text">ACPremiumAuto</div>
+  </div>
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+    stroke="rgba(255,255,255,0.5)" stroke-width="2.5" stroke-linecap="round">
+    <path d="M18 15l-6-6-6 6"/>
+  </svg>
+  <button class="acp-pill-close" id="acp-pill-close" aria-label="Close">
+    <svg width="8" height="8" viewBox="0 0 10 10" fill="none"
+      stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <path d="M1 1l8 8M9 1L1 9"/>
+    </svg>
+  </button>
+</div>
+
+<!-- Chat box -->
+<div id="acp-box">
+
+  <!-- Header -->
+  <div id="acp-header">
+    <div class="acp-avatar">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+        stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round">
+        <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806
+          3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806
+          3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946
+          3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946
+          3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806
+          3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806
+          3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946
+          3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946
+          3.42 3.42 0 013.138-3.138z"/>
+      </svg>
+      <span class="acp-online-dot"></span>
+    </div>
+    <div class="acp-header-info">
+      <div class="acp-header-name">ACPremiumAuto Support</div>
+      <div class="acp-header-status">
+        <span class="acp-status-dot"></span>
+        <span class="acp-status-text">AI Assistant · Always online</span>
+      </div>
+    </div>
+    <div class="acp-hbtns">
+      <button class="acp-hbtn" id="acp-minimize" title="Minimize">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M5 12h14"/>
+        </svg>
+      </button>
+      <button class="acp-hbtn" id="acp-close" title="Close">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none"
+          stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M1 1l12 12M13 1L1 13"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="acp-msgs"></div>
+
+  <!-- Typing indicator -->
+  <div id="acp-typing">
+    <div class="acp-typing-bubble">
+      <span class="acp-dot"></span>
+      <span class="acp-dot"></span>
+      <span class="acp-dot"></span>
+    </div>
+  </div>
+
+  <!-- Input bar -->
+  <div id="acp-input-bar">
+    <input id="acp-text" type="text" placeholder="Type a message..." autocomplete="off"/>
+    <button id="acp-send" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+        id="acp-send-icon">
+        <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Footer -->
+  <div id="acp-footer">
+    Powered by <b style="color:#9ca3af; font-weight:600;">ACPremiumAuto</b>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ⚙️ CONFIGURATION — PUT YOUR VALUES HERE
+// ============================================================
+const CONFIG = {
+  // 1. Paste your full AWS Bedrock API endpoint here
+  //    Format: https://bedrock-runtime.us-east-1.amazonaws.com
+  AWS_ENDPOINT: "https://bedrock-runtime.YOUR-REGION.amazonaws.com",
+
+  // 2. Your AWS Region (e.g. "us-east-1")
+  AWS_REGION: "us-east-1",
+
+  // 3. Paste your full Access Key ID here (Access key=AKIASE5K...)
+  AWS_ACCESS_KEY_ID: "PASTE_FULL_ACCESS_KEY_HERE",
+
+  // 4. Paste your full Secret Access Key here (SECRECT_ACCESS_KEY=UZ2...)
+  AWS_SECRET_ACCESS_KEY: "PASTE_FULL_SECRET_KEY_HERE",
+
+  // 5. Model ID for Claude Sonnet 3.5 on Bedrock
+  MODEL_ID: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+
+  // 6. Email where leads get sent
+  //    You'll need an email service like EmailJS, SendGrid, or AWS SES
+  //    For EmailJS: https://www.emailjs.com (free tier works)
+  EMAILJS_SERVICE_ID:  "PASTE_EMAILJS_SERVICE_ID",
+  EMAILJS_TEMPLATE_ID: "PASTE_EMAILJS_TEMPLATE_ID",
+  EMAILJS_PUBLIC_KEY:  "PASTE_EMAILJS_PUBLIC_KEY",
+
+  LEAD_EMAIL: "sales@acpremium.com",
+}
+// ============================================================
+
+const SYSTEM_PROMPT = `You are an expert auto parts assistant for ACPremiumAuto, a trusted supplier of used and OEM auto parts. 
+
+Your role:
+- Answer questions about auto parts, compatibility, pricing, and availability
+- Help customers identify the right part for their vehicle (year, make, model, engine)
+- Explain the difference between OEM, aftermarket, and used parts
+- Give estimated timelines and general pricing guidance
+- Be friendly, concise, and professional
+
+After answering 2-3 messages, naturally ask the customer for their name, email, and zip code so a sales specialist can follow up with exact pricing and availability.
+
+Important rules:
+- Keep responses under 3 sentences where possible
+- Always ask for vehicle year, make, model if not provided
+- Never make up specific prices — say "our team will confirm exact pricing"
+- If asked about something unrelated to auto parts, politely redirect`
+
+let chatHistory = []
+let leadCollected = false
+let isOpen = false
+let isMinimized = false
+let msgCount = 0
+
+const fab       = document.getElementById("acp-fab")
+const box       = document.getElementById("acp-box")
+const pill      = document.getElementById("acp-pill")
+const msgs      = document.getElementById("acp-msgs")
+const typingEl  = document.getElementById("acp-typing")
+const inputBar  = document.getElementById("acp-input-bar")
+const textInput = document.getElementById("acp-text")
+const sendBtn   = document.getElementById("acp-send")
+const sendIcon  = document.getElementById("acp-send-icon")
+const unreadEl  = document.getElementById("acp-unread")
+const onlineDot = document.getElementById("acp-online-dot")
+
+// ── Open / close / minimize ──────────────────────────────
+fab.addEventListener("click", () => {
+  if (isOpen && !isMinimized) {
+    closeChat()
+  } else {
+    openChat()
+  }
+})
+
+document.getElementById("acp-minimize").addEventListener("click", () => {
+  isMinimized = true
+  box.style.display = "none"
+  pill.style.display = "flex"
+  fab.querySelector("#acp-fab-icon").style.transform = "rotate(0deg)"
+  setUnread(0)
+})
+
+document.getElementById("acp-close").addEventListener("click", closeChat)
+
+pill.addEventListener("click", (e) => {
+  if (e.target.closest("#acp-pill-close")) return
+  openChat()
+})
+
+document.getElementById("acp-pill-close").addEventListener("click", (e) => {
+  e.stopPropagation()
+  closeChat()
+})
+
+function openChat() {
+  isOpen = true
+  isMinimized = false
+  box.style.display = "flex"
+  pill.style.display = "none"
+  onlineDot.style.display = "none"
+  fab.querySelector("#acp-fab-icon").style.transform = "rotate(90deg)"
+  setUnread(0)
+  if (msgs.children.length === 0) {
+    setTimeout(() => {
+      showTyping()
+      setTimeout(() => {
+        hideTyping()
+        addBubble("agent", "👋 Hi! I'm the ACPremiumAuto AI assistant. What auto part are you looking for today? Let me know your vehicle's year, make, and model!")
+      }, 1200)
+    }, 400)
+  }
+  scrollBottom()
+}
+
+function closeChat() {
+  isOpen = false
+  isMinimized = false
+  box.style.display = "none"
+  pill.style.display = "none"
+  onlineDot.style.display = "block"
+  fab.querySelector("#acp-fab-icon").style.transform = "rotate(0deg)"
+}
+
+// ── Messages ─────────────────────────────────────────────
+function addBubble(role, text) {
+  const isUser  = role === "user"
+  const isFirst = !msgs.lastElementChild ||
+    msgs.lastElementChild.dataset.role !== role
+
+  const wrap = document.createElement("div")
+  wrap.className = "acp-msg-wrap"
+  wrap.dataset.role = role
+  wrap.style.marginTop = isFirst && msgs.children.length > 0 ? "8px" : "0"
+
+  if (!isUser && isFirst) {
+    const lbl = document.createElement("div")
+    lbl.className = "acp-sender-label"
+    lbl.textContent = "AI Assistant"
+    wrap.appendChild(lbl)
+  }
+
+  const bubble = document.createElement("div")
+  bubble.className = `acp-bubble ${role}`
+  bubble.innerHTML = text.replace(/\n/g, "<br>")
+  wrap.appendChild(bubble)
+
+  const timeRow = document.createElement("div")
+  timeRow.className = `acp-time ${role}`
+  const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  if (isUser) {
+    timeRow.innerHTML = `<span>${t}</span>
+      <svg width="16" height="9" viewBox="0 0 16 9" fill="none"
+        stroke="#c4c9d4" stroke-width="2" stroke-linecap="round">
+        <path d="M1 4.5l2.5 2.5 4-5"/>
+        <path d="M6 4.5l2.5 2.5 4-5"/>
+      </svg>`
+  } else {
+    timeRow.textContent = t
+  }
+  wrap.appendChild(timeRow)
+
+  msgs.appendChild(wrap)
+  scrollBottom()
+
+  if (!isOpen) setUnread(parseInt(unreadEl.textContent || "0") + 1)
+}
+
+function showTyping() {
+  msgs.appendChild(typingEl)
+  typingEl.style.display = "flex"
+  scrollBottom()
+}
+
+function hideTyping() {
+  typingEl.style.display = "none"
+  if (typingEl.parentNode) typingEl.parentNode.removeChild(typingEl)
+}
+
+function scrollBottom() {
+  setTimeout(() => { msgs.scrollTop = msgs.scrollHeight }, 50)
+}
+
+function setUnread(n) {
+  if (n > 0) {
+    unreadEl.textContent = n > 9 ? "9+" : n
+    unreadEl.style.display = "flex"
+    onlineDot.style.display = "none"
+  } else {
+    unreadEl.style.display = "none"
+    if (!isOpen) onlineDot.style.display = "block"
+  }
+}
+
+// ── Input handling ───────────────────────────────────────
+textInput.addEventListener("input", () => {
+  const has = textInput.value.trim().length > 0
+  sendBtn.classList.toggle("active", has)
+  sendIcon.setAttribute("stroke", has ? "#fff" : "#9ca3af")
+  sendBtn.style.cursor = has ? "pointer" : "not-allowed"
+})
+
+textInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleSend()
+})
+
+sendBtn.addEventListener("click", handleSend)
+
+function handleSend() {
+  const text = textInput.value.trim()
+  if (!text) return
+  textInput.value = ""
+  sendBtn.classList.remove("active")
+  sendIcon.setAttribute("stroke", "#9ca3af")
+  addBubble("user", text)
+  msgCount++
+  chatHistory.push({ role: "user", content: text })
+  callClaude(text)
+}
+
+// ── Lead form ────────────────────────────────────────────
+function showLeadForm() {
+  // Inject form as agent bubble
+  const wrap = document.createElement("div")
+  wrap.className = "acp-msg-wrap"
+  wrap.dataset.role = "agent"
+  wrap.style.marginTop = "8px"
+
+  const lbl = document.createElement("div")
+  lbl.className = "acp-sender-label"
+  lbl.textContent = "AI Assistant"
+  wrap.appendChild(lbl)
+
+  const bubble = document.createElement("div")
+  bubble.className = "acp-bubble agent"
+  bubble.style.width = "100%"
+  bubble.style.maxWidth = "100%"
+  bubble.style.padding = "14px"
+
+  bubble.innerHTML = `
+    <div id="acp-lead-form" style="display:flex; flex-direction:column; gap:10px;">
+      <div class="acp-form-title">To get exact pricing and availability, please share your details:</div>
+      <input class="acp-input" id="acp-lead-name"  type="text"  placeholder="Your full name" />
+      <input class="acp-input" id="acp-lead-email" type="email" placeholder="Email address" />
+      <input class="acp-input" id="acp-lead-zip"   type="text"  placeholder="Zip code" maxlength="10"/>
+      <button class="acp-submit" id="acp-lead-submit">Send to Sales Team →</button>
+    </div>
+  `
+  wrap.appendChild(bubble)
+  msgs.appendChild(wrap)
+  scrollBottom()
+
+  document.getElementById("acp-lead-submit").addEventListener("click", submitLead)
+}
+
+async function submitLead() {
+  const name  = document.getElementById("acp-lead-name").value.trim()
+  const email = document.getElementById("acp-lead-email").value.trim()
+  const zip   = document.getElementById("acp-lead-zip").value.trim()
+
+  if (!name || !email || !zip) {
+    alert("Please fill in all fields.")
+    return
+  }
+
+  const btn = document.getElementById("acp-lead-submit")
+  btn.disabled = true
+  btn.textContent = "Sending..."
+
+  const summary = chatHistory
+    .map(m => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`)
+    .join("\n")
+
+  // ── Send email via EmailJS ──────────────────────────────
+  // Sign up free at https://emailjs.com, create a template with these variables:
+  // {{customer_name}}, {{customer_email}}, {{customer_zip}}, {{conversation}}, {{to_email}}
+  try {
+    await emailjs.send(
+      CONFIG.EMAILJS_SERVICE_ID,
+      CONFIG.EMAILJS_TEMPLATE_ID,
+      {
+        customer_name:  name,
+        customer_email: email,
+        customer_zip:   zip,
+        conversation:   summary,
+        to_email:       CONFIG.LEAD_EMAIL,
+      },
+      CONFIG.EMAILJS_PUBLIC_KEY
+    )
+
+    leadCollected = true
+    btn.textContent = "✓ Sent!"
+    btn.style.background = "#22c55e"
+
+    setTimeout(() => {
+      addBubble("agent", `Thank you ${name}! 🎉 Our sales team at ACPremiumAuto will reach out to ${email} shortly with exact pricing and availability. Is there anything else I can help you with?`)
+    }, 500)
+  } catch (err) {
+    console.error("EmailJS error:", err)
+    btn.disabled = false
+    btn.textContent = "Try again"
+    btn.style.background = "#ef4444"
+  }
+}
+
+// ── Claude via AWS Bedrock ───────────────────────────────
+async function callClaude(userMessage) {
+  showTyping()
+
+  try {
+    const body = JSON.stringify({
+      anthropic_version: "bedrock-2023-05-31",
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      messages: chatHistory,
+    })
+
+    // AWS Signature V4 signing
+    const url  = `${CONFIG.AWS_ENDPOINT}/model/${encodeURIComponent(CONFIG.MODEL_ID)}/invoke`
+    const host = new URL(CONFIG.AWS_ENDPOINT).host
+    const now  = new Date()
+    const amzDate    = now.toISOString().replace(/[:\-]|\.\d{3}/g, "").slice(0, 15) + "Z"
+    const dateStamp  = amzDate.slice(0, 8)
+    const service    = "bedrock"
+
+    const headers = await signRequest({
+      method: "POST",
+      url,
+      host,
+      region:    CONFIG.AWS_REGION,
+      service,
+      accessKey: CONFIG.AWS_ACCESS_KEY_ID,
+      secretKey: CONFIG.AWS_SECRET_ACCESS_KEY,
+      body,
+      amzDate,
+      dateStamp,
+    })
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+      },
+      body,
+    })
+
+    if (!res.ok) throw new Error(`Bedrock error: ${res.status}`)
+
+    const data = await res.json()
+    const reply = data.content?.[0]?.text || "Sorry, I couldn't get a response. Please try again."
+
+    hideTyping()
+    chatHistory.push({ role: "assistant", content: reply })
+    addBubble("agent", reply)
+
+    // Show lead form after 3 user messages
+    if (msgCount >= 3 && !leadCollected) {
+      setTimeout(() => showLeadForm(), 800)
+    }
+
+  } catch (err) {
+    console.error("Claude error:", err)
+    hideTyping()
+    addBubble("agent", "Sorry, I'm having trouble connecting right now. Please call us at (575) 618-4189 or email sales@acpremium.com directly.")
+  }
+}
+
+// ── AWS Signature V4 ─────────────────────────────────────
+async function signRequest({ method, url, host, region, service, accessKey, secretKey, body, amzDate, dateStamp }) {
+  const encoder = new TextEncoder()
+
+  async function sha256(data) {
+    const buf = await crypto.subtle.digest("SHA-256", typeof data === "string" ? encoder.encode(data) : data)
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("")
+  }
+
+  async function hmac(key, data) {
+    const k = await crypto.subtle.importKey("raw", typeof key === "string" ? encoder.encode(key) : key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+    return crypto.subtle.sign("HMAC", k, encoder.encode(data))
+  }
+
+  const payloadHash   = await sha256(body)
+  const canonicalUri  = new URL(url).pathname
+  const canonicalQS   = ""
+  const canonicalHdrs = `content-type:application/json\nhost:${host}\nx-amz-date:${amzDate}\n`
+  const signedHdrs    = "content-type;host;x-amz-date"
+
+  const canonicalReq = [method, canonicalUri, canonicalQS, canonicalHdrs, signedHdrs, payloadHash].join("\n")
+  const credScope    = `${dateStamp}/${region}/${service}/aws4_request`
+  const strToSign    = `AWS4-HMAC-SHA256\n${amzDate}\n${credScope}\n${await sha256(canonicalReq)}`
+
+  const kDate    = await hmac("AWS4" + secretKey, dateStamp)
+  const kRegion  = await hmac(kDate, region)
+  const kService = await hmac(kRegion, service)
+  const kSign    = await hmac(kService, "aws4_request")
+
+  const sigBuf   = await hmac(kSign, strToSign)
+  const sig      = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, "0")).join("")
+  const authHdr  = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credScope}, SignedHeaders=${signedHdrs}, Signature=${sig}`
+
+  return {
+    "x-amz-date":     amzDate,
+    "Authorization":  authHdr,
+  }
+}
+</script>
+
+<!-- EmailJS SDK — required for sending lead emails -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // Initialize EmailJS with your public key
+  emailjs.init(CONFIG.EMAILJS_PUBLIC_KEY)
+</script>
+
+</body>
+</html>
