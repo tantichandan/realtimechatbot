@@ -11,6 +11,13 @@ import UserInfoForm from "./UserInfoForm"
 const GLOBAL_CSS = `
   *, *::before, *::after { box-sizing: border-box; }
 
+  html, body, #__next, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
   @keyframes acpFadeIn {
     from { opacity:0; transform:translateY(4px); }
     to   { opacity:1; transform:translateY(0); }
@@ -55,22 +62,6 @@ const GLOBAL_CSS = `
   .acp-chip:hover  { background: #f5f5f5; }
   .acp-chip:active { background: #ebebeb; }
 
-  .acp-send-btn {
-    width: 44px;
-    height: 44px;
-    background: #1a1a2e;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: background 0.15s;
-  }
-  .acp-send-btn:hover  { background: #22223a; }
-  .acp-send-btn:active { background: #0f0f1e; }
 
   .acp-scroll-btn {
     animation: acpScrollPop 0.2s ease-out;
@@ -78,23 +69,6 @@ const GLOBAL_CSS = `
     touch-action: manipulation;
   }
   .acp-scroll-btn:active { opacity: 0.85; }
-
-  .acp-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    font-size: 13.5px;
-    color: #111;
-    background: transparent;
-    font-family: inherit;
-    padding: 0;
-    line-height: 1.5;
-    resize: none;
-    min-height: 20px;
-    max-height: 100px;
-    overflow-y: auto;
-  }
-  .acp-input::placeholder { color: #aaa; }
 `
 
 export default function ChatWidget({ widgetKey }: { widgetKey: string }) {
@@ -176,8 +150,8 @@ export default function ChatWidget({ widgetKey }: { widgetKey: string }) {
   // ─────────────────────────────────────────
   return (
     <div style={{
-      position: "fixed",
-      inset: 0,
+      position: "absolute",
+      top: 0, left: 0, right: 0, bottom: 0,
       display: "flex",
       flexDirection: "column",
       background: "#fff",
@@ -193,12 +167,18 @@ export default function ChatWidget({ widgetKey }: { widgetKey: string }) {
 
         // ── Onboarding form ──
         <div style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "24px 16px",
-          background: "#f9f9f9",
-          paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))",
-        }}>
+  flex: 1,
+
+  minHeight: 0,
+
+  overflowY: "auto",
+
+  padding: "24px 16px",
+
+  background: "#f9f9f9",
+
+  paddingBottom: 24,
+}}>
           {/* Welcome block */}
           <div style={{
             background: "#1a1a2e",
@@ -269,11 +249,11 @@ export default function ChatWidget({ widgetKey }: { widgetKey: string }) {
                       </RoleLabel>
                     )}
 
-                    {isCustomer ? (
-                      <VisitorBubble>{msg.body}</VisitorBubble>
-                    ) : (
-                      <AgentBubble>{msg.body}</AgentBubble>
-                    )}
+                    <MessageBubble
+                      role={msg.role}
+                      text={msg.body}
+                      files={msg.files}
+                    />
 
                     <div style={{
                       display: "flex",
@@ -340,7 +320,6 @@ export default function ChatWidget({ widgetKey }: { widgetKey: string }) {
             borderTop: "1px solid #e8e8e8",
             background: "#fff",
             flexShrink: 0,
-            paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }}>
             {/* Quick-reply chips */}
             {messages.length === 0 && (
@@ -359,8 +338,8 @@ export default function ChatWidget({ widgetKey }: { widgetKey: string }) {
               </div>
             )}
 
-            {/* Input row */}
-            <InputRow onSend={sendMessage} />
+            {/* Input row — MessageInput handles text + file attachments */}
+            <MessageInput onSend={sendMessage} />
 
             {/* Footer */}
             <div style={{
@@ -422,23 +401,6 @@ function AgentBubble({ children }: { children: React.ReactNode }) {
   )
 }
 
-function VisitorBubble({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      background: "#1a1a2e",   // dark brand — matches screenshot
-      padding: "11px 14px",
-      fontSize: 13.5,
-      color: "#fff",
-      lineHeight: 1.55,
-      maxWidth: "82%",
-      alignSelf: "flex-end",
-      wordBreak: "break-word",
-      marginLeft: "auto",
-    }}>
-      {children}
-    </div>
-  )
-}
 
 function Time({ value, align }: { value?: string | number; align: "left" | "right" }) {
   const t = new Date(value || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -469,62 +431,6 @@ function TypingBubble() {
         <span className="acp-dot"/>
         <span className="acp-dot"/>
       </div>
-    </div>
-  )
-}
-
-// Inline input row (replaces <MessageInput> for full style control)
-function InputRow({ onSend }: { onSend: (msg: string) => void }) {
-  const [value, setValue] = useState("")
-  const ref = useRef<HTMLTextAreaElement>(null)
-
-  const submit = () => {
-    const trimmed = value.trim()
-    if (!trimmed) return
-    onSend(trimmed)
-    setValue("")
-    if (ref.current) ref.current.style.height = "auto"
-  }
-
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      submit()
-    }
-  }
-
-  const onInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value)
-    const el = e.target
-    el.style.height = "auto"
-    el.style.height = el.scrollHeight + "px"
-  }
-
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "flex-end",
-      gap: 0,
-      padding: "10px 12px 10px",
-      borderTop: "1px solid #f0f0f0",
-    }}>
-      <textarea
-        ref={ref}
-        className="acp-input"
-        rows={1}
-        value={value}
-        onChange={onInput}
-        onKeyDown={onKey}
-        placeholder="Type a message..."
-        style={{ flex: 1, marginRight: 10 }}
-      />
-      <button className="acp-send-btn" onClick={submit} aria-label="Send message">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-          stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 2L11 13"/>
-          <path d="M22 2L15 22l-4-9-9-4 20-7z"/>
-        </svg>
-      </button>
     </div>
   )
 }
