@@ -517,7 +517,7 @@ export default function HomePage() {
           CHAT WIDGET
       ══════════════════════════════════════════ */}
       <Script
-        src="http://localhost:3000/embed.js"
+        src="https://realtimechatbot-tan.vercel.app/embed.js"
         data-widget-key="acp_e1b782e6e95f"
         strategy="afterInteractive"
       />
