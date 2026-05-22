@@ -11,9 +11,8 @@
       return;
     }
 
-    // ── Responsive breakpoint ──
-    const MOBILE_BP = 520;
-    let isMobile = window.innerWidth <= MOBILE_BP;
+    const MOBILE_BP = 560;
+    const isMob = () => window.innerWidth <= MOBILE_BP;
 
     // ====================================
     // STYLES
@@ -22,153 +21,149 @@
     style.textContent = `
       *, *::before, *::after { box-sizing: border-box; }
 
+      /* ── Keyframes ── */
       @keyframes acp-pulse {
-        0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
-        50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+        0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+        50%      { box-shadow: 0 0 0 9px rgba(239,68,68,0); }
       }
-      @keyframes acp-slidein-desktop {
-        from { opacity:0; transform:translateY(20px) scale(0.96); }
-        to   { opacity:1; transform:translateY(0) scale(1); }
+      @keyframes acp-fab-bounce {
+        0%   { transform: scale(1); }
+        40%  { transform: scale(0.88); }
+        70%  { transform: scale(1.12); }
+        100% { transform: scale(1); }
       }
-      @keyframes acp-slidein-mobile {
-        from { opacity:0; transform:translateY(100%); }
+      @keyframes acp-pill-in {
+        from { opacity:0; transform:translateY(8px); }
         to   { opacity:1; transform:translateY(0); }
       }
-      @keyframes acp-dot {
-        0%,60%,100% { transform:translateY(0); opacity:.35; }
-        30%          { transform:translateY(-4px); opacity:1; }
+
+      /* ── FAB ── */
+      #acp-fab {
+        position: fixed;
+        bottom: 22px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border: none;
+        border-radius: 50%;
+        background: #1a1a2e;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15);
+        z-index: 2147483647;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: transform 0.18s ease, box-shadow 0.18s ease,
+                    opacity 0.22s ease;
+        will-change: transform, opacity;
+      }
+      #acp-fab:hover  { transform: scale(1.07); box-shadow: 0 8px 28px rgba(0,0,0,0.34); }
+      #acp-fab:active { transform: scale(0.93); }
+      #acp-fab.acp-fab-out {
+        opacity: 0;
+        transform: scale(0.72) translateY(12px);
+        pointer-events: none;
+      }
+      @media (max-width: 560px) {
+        #acp-fab {
+          bottom: max(20px, env(safe-area-inset-bottom, 20px));
+          right: 18px;
+          width: 58px;
+          height: 58px;
+        }
       }
 
+      #acp-fab-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                    opacity 0.18s ease;
+      }
+
+      /* badge */
       #acp-badge {
         position: absolute;
-        top: -5px; right: -5px;
+        top: -4px; right: -4px;
         min-width: 20px; height: 20px;
         background: #ef4444;
         border-radius: 10px;
         border: 2.5px solid #fff;
         display: none;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: 700;
-        color: #fff;
+        align-items: center; justify-content: center;
+        font-size: 10px; font-weight: 700; color: #fff;
         padding: 0 4px;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         animation: acp-pulse 1.8s ease-in-out infinite;
         pointer-events: none;
         z-index: 1;
       }
+      /* online dot */
       #acp-online-dot {
         position: absolute;
-        bottom: 4px; right: 4px;
-        width: 12px; height: 12px;
+        bottom: 3px; right: 3px;
+        width: 13px; height: 13px;
         background: #22c55e;
         border-radius: 50%;
         border: 2.5px solid #1a1a2e;
         pointer-events: none;
+        transition: opacity 0.2s;
       }
 
-      #acp-fab {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        border: none;
-        border-radius: 9999px;
-        background: #1a1a2e;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 6px 24px rgba(0,0,0,0.28);
-        z-index: 2147483647;
-        padding: 0;
+      /* ── Backdrop ── */
+      #acp-backdrop {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0);
+        z-index: 2147483644;
+        display: none;
+        transition: background 0.32s ease;
         -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
-      #acp-fab:hover {
-        transform: scale(1.08);
-        box-shadow: 0 10px 36px rgba(0,0,0,0.32);
-      }
-      #acp-fab:active {
-        transform: scale(0.94);
-      }
+      #acp-backdrop.acp-bd-in { background: rgba(0,0,0,0.45); }
+      @media (min-width: 561px) { #acp-backdrop { display: none !important; } }
 
-      /* FAB safe area on mobile */
-      @media (max-width: 520px) {
-        #acp-fab {
-          bottom: max(16px, env(safe-area-inset-bottom, 16px));
-          right: 16px;
-          width: 56px;
-          height: 56px;
-        }
-      }
-
-      .acp-hbtn {
-        background: rgba(255,255,255,0.08);
-        border: none;
-        color: rgba(255,255,255,0.7);
-        width: 32px; height: 32px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.15s, color 0.15s;
-        flex-shrink: 0;
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-        padding: 0;
-      }
-      .acp-hbtn:hover { background: rgba(255,255,255,0.18); }
-      .acp-hbtn:active { background: rgba(255,255,255,0.25); }
-      .acp-hbtn.acp-muted {
-        background: rgba(239,68,68,0.22) !important;
-        color: #fca5a5 !important;
-      }
-      @media (max-width: 520px) {
-        .acp-hbtn { width: 36px; height: 36px; border-radius: 10px; }
-      }
-
-      /* ── Widget container ── */
+      /* ── Container — desktop ── */
       #acp-container {
         position: fixed;
         z-index: 2147483646;
+        display: none;
         flex-direction: column;
         overflow: hidden;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-        /* Desktop */
-        bottom: 90px;
-        right: 20px;
-        width: 380px;
-        height: 600px;
-        border-radius: 0;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.22);
         background: #fff;
+
+        /* desktop sizing */
+        bottom: 92px; right: 20px;
+        width: 375px; height: 590px;
+        border-radius: 20px;
+        box-shadow: 0 12px 48px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.08);
         opacity: 0;
-        transform: translateY(20px) scale(0.96);
-        transition: opacity 0.25s ease, transform 0.25s ease;
+        transform: translateY(18px) scale(0.97);
+        transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.34,1.3,0.64,1);
       }
       #acp-container.acp-open {
         opacity: 1;
         transform: translateY(0) scale(1);
       }
-      /* Mobile: slide up full screen */
-      @media (max-width: 520px) {
+
+      /* ── Container — mobile bottom sheet ── */
+      @media (max-width: 560px) {
         #acp-container {
-          bottom: 0;
-          right: 0;
-          left: 0;
+          /* full-width sheet anchored to bottom */
+          bottom: 0; left: 0; right: 0;
           width: 100%;
-          height: 100%;
-          max-height: 100dvh;
+          /* height set dynamically via JS using dvh */
+          height: 92dvh;
+          max-height: 92dvh;
           border-radius: 24px 24px 0 0;
+          box-shadow: 0 -6px 40px rgba(0,0,0,0.22);
           transform: translateY(100%);
-          transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-          box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+          opacity: 1; /* don't fade on mobile, just slide */
+          transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
+          will-change: transform;
         }
         #acp-container.acp-open {
           transform: translateY(0);
@@ -179,101 +174,144 @@
       /* ── Header ── */
       #acp-header {
         background: #1a1a2e;
-        padding: 14px 16px;
+        padding: 13px 15px;
         display: flex;
         align-items: center;
         gap: 10px;
         flex-shrink: 0;
-        /* Mobile: add top safe area + drag handle space */
+        user-select: none;
+        -webkit-user-select: none;
       }
-      @media (max-width: 520px) {
+      @media (max-width: 560px) {
         #acp-header {
-          padding: 8px 16px 14px;
-          padding-top: max(8px, env(safe-area-inset-top, 8px));
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0;
+          padding: 0 16px 13px;
+          /* extra top padding for safe area */
+          padding-top: max(10px, env(safe-area-inset-top, 10px));
+          cursor: grab;
+        }
+        #acp-header:active { cursor: grabbing; }
+      }
+
+      /* drag pill — mobile only */
+      #acp-drag-pill {
+        display: none;
+      }
+      @media (max-width: 560px) {
+        #acp-drag-pill {
+          display: block;
+          width: 40px; height: 4px;
+          background: rgba(255,255,255,0.28);
+          border-radius: 2px;
+          margin: 10px auto 12px;
+          flex-shrink: 0;
         }
       }
 
-      /* Drag handle for mobile */
-      #acp-drag-handle {
-        display: none;
+      #acp-header-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
       }
-      @media (max-width: 520px) {
-        #acp-drag-handle {
-          display: block;
-          width: 36px;
-          height: 4px;
-          background: rgba(255,255,255,0.25);
-          border-radius: 2px;
-          margin: 0 auto 8px;
-        }
+
+      /* ── Header avatar ── */
+      #acp-avatar {
+        position: relative;
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        border: 1.5px solid rgba(255,255,255,0.15);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      @media (max-width: 560px) {
+        #acp-avatar { width: 38px; height: 38px; }
+      }
+
+      /* ── Header buttons ── */
+      .acp-hbtn {
+        background: rgba(255,255,255,0.08);
+        border: none;
+        color: rgba(255,255,255,0.72);
+        width: 32px; height: 32px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.14s, color 0.14s;
+        flex-shrink: 0;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        padding: 0;
+      }
+      .acp-hbtn:hover  { background: rgba(255,255,255,0.17); }
+      .acp-hbtn:active { background: rgba(255,255,255,0.26); }
+      .acp-hbtn.acp-muted {
+        background: rgba(239,68,68,0.22) !important;
+        color: #fca5a5 !important;
+      }
+      @media (max-width: 560px) {
+        .acp-hbtn { width: 38px; height: 38px; border-radius: 10px; }
+      }
+
+      /* Hide minimize on mobile — swipe-down replaces it */
+      @media (max-width: 560px) {
+        #acp-min-btn { display: none !important; }
       }
 
       /* ── iframe ── */
       #acp-iframe {
-        width: 100%;
-        flex: 1;
-        border: none;
-        background: transparent;
-        display: block;
-        min-height: 0;
-        overflow: hidden;
+        width: 100%; flex: 1;
+        border: none; background: transparent;
+        display: block; min-height: 0;
+        /* iOS Safari needs this to allow the inner page to scroll */
+        -webkit-overflow-scrolling: touch;
       }
-
-      /* ── Minimized pill ── */
-      #acp-pill {
-        position: fixed;
-        bottom: 90px;
-        right: 20px;
-        background: #1a1a2e;
-        color: #fff;
-        border-radius: 28px;
-        padding: 10px 14px 10px 10px;
-        display: none;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 6px 20px rgba(26,26,46,0.35);
-        z-index: 2147483646;
-        cursor: pointer;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        animation: acp-slidein-desktop 0.22s ease-out;
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-        max-width: calc(100vw - 40px);
-      }
-      #acp-pill:hover { background: #22223a; }
-      #acp-pill:active { background: #2d2d4e; }
-
-      @media (max-width: 520px) {
-        #acp-pill {
-          bottom: max(90px, calc(56px + env(safe-area-inset-bottom, 0px) + 14px));
-          right: 16px;
-          left: 16px;
-          right: auto;
-          justify-content: space-between;
+      @media (max-width: 560px) {
+        #acp-iframe {
+          /* push up above the bottom safe area */
+          padding-bottom: env(safe-area-inset-bottom, 0px);
         }
       }
 
-      /* ── Overlay backdrop (mobile only) ── */
-      #acp-backdrop {
+      /* ── Minimised pill ── */
+      #acp-pill {
         position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.4);
+        bottom: 92px; right: 20px;
+        background: #1a1a2e; color: #fff;
+        border-radius: 30px;
+        padding: 10px 14px 10px 10px;
+        display: none; align-items: center; gap: 8px;
+        box-shadow: 0 6px 22px rgba(26,26,46,0.38);
         z-index: 2147483645;
-        display: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
+        cursor: pointer;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        animation: acp-pill-in 0.22s ease-out;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        max-width: calc(100vw - 40px);
+        transition: background 0.14s;
       }
-      #acp-backdrop.acp-visible {
-        opacity: 1;
-      }
-      @media (min-width: 521px) {
-        #acp-backdrop { display: none !important; }
+      #acp-pill:hover  { background: #22223a; }
+      #acp-pill:active { background: #2d2d4e; }
+
+      @media (max-width: 560px) {
+        #acp-pill {
+          /* sit just above the FAB */
+          bottom: max(88px, calc(58px + env(safe-area-inset-bottom, 0px) + 14px));
+          left: 18px; right: 18px;
+          border-radius: 18px;
+          justify-content: space-between;
+          padding: 12px 14px 12px 12px;
+        }
       }
     `;
     document.head.appendChild(style);
 
     // ====================================
-    // BACKDROP (mobile dim)
+    // BACKDROP
     // ====================================
     const backdrop = document.createElement("div");
     backdrop.id = "acp-backdrop";
@@ -285,32 +323,25 @@
     // ====================================
     const container = document.createElement("div");
     container.id = "acp-container";
-    container.style.display = "none"; // hidden by default; openChat() sets "flex"
 
-    // ── Header ──
+    // ── Header ──────────────────────────────────────
     const header = document.createElement("div");
     header.id = "acp-header";
 
-    // Drag handle (mobile only, sits inside header at top)
-    const dragHandleWrap = document.createElement("div");
-    dragHandleWrap.style.cssText = "width:100%; display:flex; flex-direction:column; align-items:center;";
-    const dragHandle = document.createElement("div");
-    dragHandle.id = "acp-drag-handle";
-    dragHandleWrap.appendChild(dragHandle);
+    // drag pill (mobile)
+    const dragPill = document.createElement("div");
+    dragPill.id = "acp-drag-pill";
+    header.appendChild(dragPill);
 
-    // Avatar
+    // header content row
+    const headerRow = document.createElement("div");
+    headerRow.id = "acp-header-row";
+
+    // avatar
     const avatar = document.createElement("div");
-    avatar.style.cssText = `
-      position: relative;
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.08);
-      border: 1.5px solid rgba(255,255,255,0.15);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    `;
+    avatar.id = "acp-avatar";
     avatar.innerHTML = `
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
         stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round">
         <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806
           3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806
@@ -322,34 +353,31 @@
           3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946
           3.42 3.42 0 013.138-3.138z"/>
       </svg>
-      <span style="
-        position:absolute; bottom:1px; right:1px;
-        width:10px; height:10px;
-        background:#22c55e; border-radius:50%;
-        border:2px solid #1a1a2e;
-      "></span>
+      <span style="position:absolute;bottom:1px;right:1px;
+        width:10px;height:10px;background:#22c55e;border-radius:50%;
+        border:2px solid #1a1a2e;"></span>
     `;
 
-    // Title block
+    // title
     const titleBlock = document.createElement("div");
-    titleBlock.style.cssText = "flex:1; min-width:0;";
+    titleBlock.style.cssText = "flex:1;min-width:0;";
     titleBlock.innerHTML = `
-      <div style="color:#fff; font-size:13.5px; font-weight:600; letter-spacing:0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+      <div style="color:#fff;font-size:13.5px;font-weight:600;letter-spacing:0.01em;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
         ACPremiumAuto Support
       </div>
-      <div style="display:flex; align-items:center; gap:5px; margin-top:3px;">
+      <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">
         <span style="width:6px;height:6px;background:#22c55e;border-radius:50%;flex-shrink:0;"></span>
-        <span style="color:rgba(255,255,255,0.5); font-size:11px; white-space:nowrap;">
+        <span style="color:rgba(255,255,255,0.5);font-size:11px;white-space:nowrap;">
           Online · replies in minutes
         </span>
       </div>
     `;
 
-    // Controls
+    // controls
     const controls = document.createElement("div");
-    controls.style.cssText = "display:flex; align-items:center; gap:6px; flex-shrink:0;";
+    controls.style.cssText = "display:flex;align-items:center;gap:5px;flex-shrink:0;";
 
-    // Sound toggle
     let soundEnabled = true;
     const soundBtn = document.createElement("button");
     soundBtn.className = "acp-hbtn";
@@ -360,107 +388,93 @@
       soundEnabled = !soundEnabled;
       soundBtn.innerHTML = soundEnabled ? svgSpeakerOn() : svgSpeakerOff();
       soundBtn.classList.toggle("acp-muted", !soundEnabled);
-      soundBtn.title = soundEnabled ? "Mute notifications" : "Unmute notifications";
-      soundBtn.setAttribute("aria-label", soundBtn.title);
+      soundBtn.title = soundEnabled ? "Mute" : "Unmute";
       iframe.contentWindow?.postMessage({ type: "acp:sound", enabled: soundEnabled }, "*");
     };
 
-    // Minimize (hide on mobile — swipe down or close)
     const minBtn = document.createElement("button");
     minBtn.className = "acp-hbtn";
     minBtn.id = "acp-min-btn";
     minBtn.title = "Minimize";
-    minBtn.setAttribute("aria-label", "Minimize chat");
+    minBtn.setAttribute("aria-label", "Minimize");
     minBtn.innerHTML = `
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
         <path d="M5 12h14"/>
-      </svg>
-    `;
+      </svg>`;
     minBtn.onclick = () => minimize();
 
-    // Close
     const closeBtn = document.createElement("button");
     closeBtn.className = "acp-hbtn";
-    closeBtn.title = "Close chat";
+    closeBtn.title = "Close";
     closeBtn.setAttribute("aria-label", "Close chat");
     closeBtn.innerHTML = `
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none"
         stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
         <path d="M1 1l12 12M13 1L1 13"/>
-      </svg>
-    `;
+      </svg>`;
     closeBtn.onclick = () => closeChat();
 
     controls.appendChild(soundBtn);
     controls.appendChild(minBtn);
     controls.appendChild(closeBtn);
 
-    // Assemble header: drag handle row + content row
-    const headerContent = document.createElement("div");
-    headerContent.style.cssText = "display:flex; align-items:center; gap:10px; width:100%;";
-    headerContent.appendChild(avatar);
-    headerContent.appendChild(titleBlock);
-    headerContent.appendChild(controls);
+    headerRow.appendChild(avatar);
+    headerRow.appendChild(titleBlock);
+    headerRow.appendChild(controls);
+    header.appendChild(headerRow);
 
-    header.appendChild(dragHandleWrap);
-    header.appendChild(headerContent);
-
-    // ── Iframe ──
+    // ── iframe ──────────────────────────────────────
     const iframe = document.createElement("iframe");
     iframe.id = "acp-iframe";
     iframe.src = `https://realtimechatbot-tan.vercel.app/?widget_key=${widgetKey}`;
     iframe.setAttribute("scrolling", "no");
     iframe.setAttribute("title", "ACPremiumAuto chat");
     iframe.setAttribute("allow", "same-origin");
-    iframe.style.overflow = "hidden";
 
     container.appendChild(header);
     container.appendChild(iframe);
 
     // ====================================
-    // MINIMIZED PILL
+    // MINIMISED PILL
     // ====================================
     const pill = document.createElement("div");
     pill.id = "acp-pill";
     pill.setAttribute("role", "button");
     pill.setAttribute("aria-label", "Reopen chat");
     pill.innerHTML = `
-      <div style="
-        width:28px;height:28px;border-radius:50%;
-        background:rgba(255,255,255,0.1);
-        display:flex;align-items:center;justify-content:center;flex-shrink:0;
-      ">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          stroke="rgba(255,255,255,0.8)" stroke-width="1.8"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-        </svg>
-      </div>
-      <div style="flex:1; min-width:0;">
-        <div style="font-size:12px;font-weight:600;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ACPremiumAuto
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+        <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.1);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
         </div>
-        <div id="acp-pill-sub" style="font-size:10.5px;color:rgba(255,255,255,0.55);margin-top:2px;display:none;white-space:nowrap;">
-          0 new messages
+        <div style="min-width:0;">
+          <div style="font-size:12.5px;font-weight:600;line-height:1.2;white-space:nowrap;
+            overflow:hidden;text-overflow:ellipsis;">ACPremiumAuto</div>
+          <div id="acp-pill-sub" style="font-size:11px;color:rgba(255,255,255,0.55);
+            margin-top:1px;display:none;"></div>
         </div>
       </div>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-        stroke="rgba(255,255,255,0.5)" stroke-width="2.5" stroke-linecap="round">
-        <path d="M18 15l-6-6-6 6"/>
-      </svg>
-      <button id="acp-pill-close" style="
-        background:rgba(255,255,255,0.12);border:none;color:#fff;
-        min-width:28px;min-height:28px;border-radius:50%;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;
-        padding:0;margin-left:2px;flex-shrink:0;
-        -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-      " aria-label="Dismiss chat">
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M1 1l8 8M9 1L1 9"/>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+          stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 15l-6-6-6 6"/>
         </svg>
-      </button>
+        <button id="acp-pill-close" style="
+          background:rgba(255,255,255,0.12);border:none;color:#fff;
+          min-width:28px;min-height:28px;border-radius:50%;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;padding:0;
+          -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+        " aria-label="Dismiss">
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M1 1l8 8M9 1L1 9"/>
+          </svg>
+        </button>
+      </div>
     `;
     pill.onclick = () => restoreFromMinimize();
     pill.querySelector("#acp-pill-close").onclick = (e) => {
@@ -475,17 +489,18 @@
     fab.id = "acp-fab";
     fab.setAttribute("aria-label", "Open chat");
 
-    const fabIconWrap = document.createElement("div");
-    fabIconWrap.style.cssText = "transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s; display:flex;";
-    fabIconWrap.innerHTML = svgChat();
-    fab.appendChild(fabIconWrap);
+    const fabIcon = document.createElement("div");
+    fabIcon.id = "acp-fab-icon";
+    fabIcon.innerHTML = svgChat();
 
     const badge = document.createElement("div");
     badge.id = "acp-badge";
-    fab.appendChild(badge);
 
     const onlineDot = document.createElement("span");
     onlineDot.id = "acp-online-dot";
+
+    fab.appendChild(fabIcon);
+    fab.appendChild(badge);
     fab.appendChild(onlineDot);
 
     // ====================================
@@ -494,59 +509,60 @@
     let isOpen      = false;
     let isMinimized = false;
     let unreadCount = 0;
+    let audioCtx    = null;
 
+    // ====================================
+    // OPEN / CLOSE / MINIMIZE
+    // ====================================
     function openChat() {
-      isOpen      = true;
-      isMinimized = false;
+      isOpen = true; isMinimized = false;
       pill.style.display = "none";
+
       container.style.display = "flex";
 
-      // show backdrop on mobile
-      if (window.innerWidth <= MOBILE_BP) {
+      if (isMob()) {
+        // Mobile: hide FAB, show backdrop
+        fab.classList.add("acp-fab-out");
         backdrop.style.display = "block";
-        requestAnimationFrame(() => backdrop.classList.add("acp-visible"));
-        minBtn.style.display = "none";
-      } else {
-        minBtn.style.display = "flex";
+        requestAnimationFrame(() => backdrop.classList.add("acp-bd-in"));
       }
 
-      // Double rAF: first frame registers display:flex in layout,
-      // second frame triggers the CSS transition from the initial opacity/transform.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => container.classList.add("acp-open"));
-      });
+      // Trigger CSS transition (double rAF ensures display:flex is painted first)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => container.classList.add("acp-open"))
+      );
 
-      fabIconWrap.style.transform = "rotate(90deg)";
-      fabIconWrap.innerHTML = svgClose();
-      fab.setAttribute("aria-label", "Close chat");
       clearBadge();
     }
 
     function closeChat() {
-      isOpen      = false;
-      isMinimized = false;
-      pill.style.display = "none";
+      isOpen = false; isMinimized = false;
+
       container.classList.remove("acp-open");
-      backdrop.classList.remove("acp-visible");
+      backdrop.classList.remove("acp-bd-in");
+      fab.classList.remove("acp-fab-out");
+      pill.style.display = "none";
+
+      const delay = isMob() ? 380 : 240;
       setTimeout(() => {
         container.style.display = "none";
-        backdrop.style.display  = "none";
-      }, 300);
-      fabIconWrap.style.transform = "rotate(0deg)";
-      fabIconWrap.innerHTML = svgChat();
-      fab.setAttribute("aria-label", "Open chat");
+        if (isMob()) backdrop.style.display = "none";
+      }, delay);
     }
 
     function minimize() {
       isMinimized = true;
+
       container.classList.remove("acp-open");
-      backdrop.classList.remove("acp-visible");
+      backdrop.classList.remove("acp-bd-in");
+      fab.classList.remove("acp-fab-out");
+
+      const delay = isMob() ? 380 : 240;
       setTimeout(() => {
         container.style.display = "none";
-        backdrop.style.display  = "none";
-      }, 300);
-      fabIconWrap.style.transform = "rotate(0deg)";
-      fabIconWrap.innerHTML = svgChat();
+        if (isMob()) backdrop.style.display = "none";
+      }, delay);
+
       pill.style.display = "flex";
     }
 
@@ -555,55 +571,88 @@
       openChat();
     }
 
+    // ====================================
+    // BADGE HELPERS
+    // ====================================
     function clearBadge() {
       unreadCount = 0;
       badge.style.display = "none";
-      onlineDot.style.display = "";
-      const pillSub = document.getElementById("acp-pill-sub");
-      if (pillSub) pillSub.style.display = "none";
+      onlineDot.style.opacity = "1";
+      const ps = document.getElementById("acp-pill-sub");
+      if (ps) ps.style.display = "none";
     }
 
     function showBadge(count) {
       unreadCount = count;
       if (isOpen && !isMinimized) { clearBadge(); return; }
-      if (count === 0) { clearBadge(); return; }
+      if (count <= 0) { clearBadge(); return; }
       badge.textContent = count > 9 ? "9+" : String(count);
       badge.style.display = "flex";
-      onlineDot.style.display = "none";
-      const pillSub = document.getElementById("acp-pill-sub");
-      if (pillSub && isMinimized) {
-        pillSub.textContent = `${count} new message${count > 1 ? "s" : ""}`;
-        pillSub.style.display = "block";
+      onlineDot.style.opacity = "0";
+      const ps = document.getElementById("acp-pill-sub");
+      if (ps && isMinimized) {
+        ps.textContent = `${count} new message${count !== 1 ? "s" : ""}`;
+        ps.style.display = "block";
       }
     }
 
-    // ── Audio beep ──
-    let audioCtx = null;
+    // ====================================
+    // SOUND
+    // ====================================
     function playBeep() {
       if (!soundEnabled) return;
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc  = audioCtx.createOscillator();
+        const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        osc.connect(gain); gain.connect(audioCtx.destination);
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.09, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
         osc.start(audioCtx.currentTime);
         osc.stop(audioCtx.currentTime + 0.25);
       } catch (_) {}
     }
 
-    // ── Touch-to-dismiss on mobile (swipe down) ──
-    let touchStartY = 0;
+    // ====================================
+    // DRAG-TO-DISMISS  (mobile sheet)
+    // Only fires on the header drag area
+    // ====================================
+    let dragStartY   = 0;
+    let dragCurrent  = 0;
+    let dragging     = false;
+
     header.addEventListener("touchstart", (e) => {
-      touchStartY = e.touches[0].clientY;
+      dragStartY = e.touches[0].clientY;
+      dragCurrent = 0;
+      dragging = true;
+      container.style.transition = "none"; // disable CSS transition while dragging
     }, { passive: true });
-    header.addEventListener("touchend", (e) => {
-      const delta = e.changedTouches[0].clientY - touchStartY;
-      if (delta > 60) minimize();
+
+    header.addEventListener("touchmove", (e) => {
+      if (!dragging) return;
+      const delta = e.touches[0].clientY - dragStartY;
+      if (delta < 0) return; // don't allow dragging up
+      dragCurrent = delta;
+      container.style.transform = `translateY(${delta}px)`;
+    }, { passive: true });
+
+    header.addEventListener("touchend", () => {
+      if (!dragging) return;
+      dragging = false;
+      // Re-enable transition
+      container.style.transition = "";
+
+      if (dragCurrent > 80) {
+        // Dragged far enough — minimize
+        container.style.transform = "";
+        minimize();
+      } else {
+        // Snap back
+        container.style.transform = "";
+        container.classList.add("acp-open");
+      }
     }, { passive: true });
 
     // ====================================
@@ -615,24 +664,15 @@
     };
 
     // ====================================
-    // postMessage
+    // postMessage from iframe
     // ====================================
     window.addEventListener("message", (e) => {
       const d = e.data;
       if (!d) return;
-      if (d.type === "acp:unread") {
-        if (d.count > 0) playBeep();
-        showBadge(d.count);
-      }
-      if (d === "acp:close"    || d.type === "acp:close")    closeChat();
-      if (d === "acp:minimized"|| d.type === "acp:minimized") minimize();
+      if (d.type === "acp:unread") { if (d.count > 0) playBeep(); showBadge(d.count); }
+      if (d === "acp:close"     || d.type === "acp:close")     closeChat();
+      if (d === "acp:minimized" || d.type === "acp:minimized") minimize();
     });
-
-    // ── Recheck mobile on resize ──
-    window.addEventListener("resize", () => {
-      isMobile = window.innerWidth <= MOBILE_BP;
-      if (!isMobile) minBtn.style.display = "";
-    }, { passive: true });
 
     // ====================================
     // MOUNT
@@ -679,11 +719,9 @@
   const scripts = document.getElementsByTagName("script");
   for (const script of scripts) {
     if (script.src.includes("embed.js")) {
-      if (document.readyState === "complete") {
-        createWidget(script);
-      } else {
-        window.addEventListener("load", () => createWidget(script));
-      }
+      document.readyState === "complete"
+        ? createWidget(script)
+        : window.addEventListener("load", () => createWidget(script));
       break;
     }
   }
